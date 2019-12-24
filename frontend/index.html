@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HideAndSeek</title>
+    <script src="https://cdn.bootcss.com/vue/2.6.10/vue.js"></script>
+    <link rel="icon" href="data:;base64,=">
+</head>
+<body>
+
+<div id="app">
+    <p>{{ message }}</p>
+    <label>
+        玩家ID：
+        <input type="text" :value="playerId">
+    </label>
+    <button @click="matchPlayer">匹配</button>
+
+</div>
+
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            message: 'Hello Vue!',
+            websock: null,
+            playerId: 'player_' + Math.round(Math.random() * 1000),
+
+        },
+        created() {
+            this.initWebSocket();
+        },
+        destroyed() {
+            this.websock.close() //离开路由之后断开websocket连接
+        },
+        methods: {
+            initWebSocket() { //初始化websocket
+                const wsuri = "ws://127.0.0.1:8811?player_id="+this.playerId;
+                this.websock = new WebSocket(wsuri);
+                this.websock.onmessage = this.websocketonmessage;
+                this.websock.onopen = this.websocketonopen;
+                this.websock.onerror = this.websocketonerror;
+                this.websock.onclose = this.websocketclose;
+            },
+            websocketonopen() { //连接建立之后执行send方法发送数据
+                let actions = { "test": "12345" };
+                this.websocketsend(actions);
+            },
+            websocketonerror() {//连接建立失败重连
+                this.initWebSocket();
+            },
+            websocketonmessage(e) { //数据接收
+                this.message = e.data;
+            },
+            websocketsend(Data) {//数据发送
+                this.websock.send(JSON.stringify(Data));
+            },
+            websocketclose(e) {  //关闭
+                console.log('断开连接', e);
+            },
+            //匹配玩家
+            matchPlayer() {
+                let actions = { "code": 600 };
+                this.message = '匹配中'
+                this.websocketsend(actions);
+            },
+        }
+    })
+</script>
+</body>
+</html>
